@@ -1,0 +1,330 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pix Rewards - Simulador de Prêmios</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0d131a;
+            color: #f1f5f9;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .pix-gradient {
+            background: linear-gradient(135deg, #32bcad 0%, #008775 100%);
+        }
+        .pix-gradient-hover:hover {
+            background: linear-gradient(135deg, #3bccbb 0%, #009985 100%);
+        }
+        .gold-gradient {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        .card-glow {
+            box-shadow: 0 8px 32px 0 rgba(50, 188, 173, 0.15);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #32bcad;
+        }
+        /* Flip card memory game */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        /* Tap button pulse animation */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(50, 188, 173, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(50, 188, 173, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(50, 188, 173, 0); }
+        }
+        .pulse-btn {
+            animation: pulse-ring 2s infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20 md:pb-6 flex flex-col justify-between">
+
+    <!-- Top Disclaimer Banner -->
+    <div class="bg-amber-500/10 border-b border-amber-500/20 text-amber-300 px-4 py-2 text-xs md:text-sm text-center flex items-center justify-center gap-2 font-medium">
+        <i class="fa-solid fa-triangle-exclamation text-amber-400 text-base"></i>
+        <span><strong>AVISO IMPORTANTE:</strong> Este aplicativo é um <u>simulador</u> exclusivo para entretenimento. Nenhum dinheiro real ou transação Pix de verdade é efetuada.</span>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 pix-gradient rounded-xl flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
+                    <i class="fa-solid fa-bolt text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg leading-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-emerald-400">Pix Cash Master</h1>
+                    <span class="text-[10px] uppercase tracking-wider font-semibold bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full border border-teal-500/30">Simulador</span>
+                </div>
+            </div>
+
+            <!-- Balances Display -->
+            <div class="flex items-center gap-3">
+                <!-- Coin Balance -->
+                <div class="bg-slate-800/80 border border-slate-700/60 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                    <i class="fa-solid fa-coins text-amber-400 text-base"></i>
+                    <div class="text-right">
+                        <div class="text-[10px] text-slate-400 font-semibold leading-none">MOEDAS</div>
+                        <div id="coinBalance" class="text-sm font-bold text-amber-300 leading-none mt-0.5">0</div>
+                    </div>
+                </div>
+
+                <!-- Simulated Real Value (R$) -->
+                <div class="bg-teal-950/40 border border-teal-500/30 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                    <i class="fa-solid fa-pix text-teal-400 text-base"></i>
+                    <div class="text-right">
+                        <div class="text-[10px] text-teal-400/80 font-semibold leading-none">SALDO PIX</div>
+                        <div id="pixBalance" class="text-sm font-extrabold text-teal-300 leading-none mt-0.5">R$ 0,00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-4xl mx-auto w-full px-4 py-6 flex-1 flex flex-col gap-6">
+
+        <!-- Navigation Tabs -->
+        <div class="flex bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 gap-1 text-sm font-semibold text-slate-400">
+            <button onclick="switchTab('games')" id="tab-games" class="flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-2 bg-teal-500 text-slate-950 font-bold shadow-md">
+                <i class="fa-solid fa-gamepad"></i> Jogos
+            </button>
+            <button onclick="switchTab('wheel')" id="tab-wheel" class="flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-2 hover:text-slate-200">
+                <i class="fa-solid fa-circle-notch"></i> Roleta
+            </button>
+            <button onclick="switchTab('withdraw')" id="tab-withdraw" class="flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-2 hover:text-slate-200">
+                <i class="fa-solid fa-wallet"></i> Saque
+            </button>
+            <button onclick="switchTab('history')" id="tab-history" class="flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-2 hover:text-slate-200">
+                <i class="fa-solid fa-clock-rotate-left"></i> Extrato
+            </button>
+        </div>
+
+        <!-- TAB CONTENT 1: GAMES HUB -->
+        <section id="sec-games" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <!-- Game 1: Memory Game -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 hover:border-teal-500/40 transition-all group flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-brain"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-100">Jogo da Memória</h3>
+                        <p class="text-xs text-slate-400 mt-1">Encontre os pares de símbolos Pix e ganhe moedas por velocidade!</p>
+                    </div>
+                    <div class="mt-6 flex items-center justify-between">
+                        <span class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">+150 Moedas</span>
+                        <button onclick="openGameModal('memory')" class="pix-gradient text-slate-950 font-bold text-xs px-4 py-2 rounded-xl hover:opacity-90 transition">
+                            Jogar <i class="fa-solid fa-play ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Game 2: Speed Tap -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 hover:border-teal-500/40 transition-all group flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-hand-pointer"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-100">Tap Speed Pix</h3>
+                        <p class="text-xs text-slate-400 mt-1">Clique o mais rápido possível em 10 segundos para acumular bônus!</p>
+                    </div>
+                    <div class="mt-6 flex items-center justify-between">
+                        <span class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">+100 Moedas</span>
+                        <button onclick="openGameModal('tap')" class="pix-gradient text-slate-950 font-bold text-xs px-4 py-2 rounded-xl hover:opacity-90 transition">
+                            Jogar <i class="fa-solid fa-play ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Game 3: Quiz Trivia -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 hover:border-teal-500/40 transition-all group flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-lightbulb"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-100">Quiz Pix & Finanças</h3>
+                        <p class="text-xs text-slate-400 mt-1">Responda perguntas simples de conhecimentos gerais e educação financeira.</p>
+                    </div>
+                    <div class="mt-6 flex items-center justify-between">
+                        <span class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">+200 Moedas</span>
+                        <button onclick="openGameModal('quiz')" class="pix-gradient text-slate-950 font-bold text-xs px-4 py-2 rounded-xl hover:opacity-90 transition">
+                            Jogar <i class="fa-solid fa-play ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Achievements Block -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-amber-400"></i> Conquistas Diárias
+                    </h3>
+                    <span id="achievementsCount" class="text-xs text-slate-400 font-semibold">0/3 Concluídos</span>
+                </div>
+                <div class="space-y-3" id="achievementsList">
+                    <!-- Dynamic achievements loaded via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB CONTENT 2: SPIN WHEEL -->
+        <section id="sec-wheel" class="hidden flex flex-col items-center justify-center py-4">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 w-full max-w-md text-center card-glow relative overflow-hidden">
+                <h2 class="text-xl font-extrabold text-slate-100 mb-1">Roleta da Sorte Pix</h2>
+                <p class="text-xs text-slate-400 mb-6">Gire a roleta diariamente e ganhe moedas extras instantâneas!</p>
+
+                <!-- Canvas Wheel Container -->
+                <div class="relative w-64 h-64 mx-auto mb-6 flex items-center justify-center">
+                    <!-- Arrow Indicator -->
+                    <div class="absolute -top-3 z-10 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-amber-400 drop-shadow-md"></div>
+                    
+                    <canvas id="wheelCanvas" width="260" height="260" class="rounded-full shadow-2xl transition-transform duration-500 ease-out"></canvas>
+                </div>
+
+                <button id="spinBtn" onclick="spinWheel()" class="w-full py-3.5 pix-gradient text-slate-950 font-extrabold text-base rounded-2xl shadow-lg shadow-teal-500/20 hover:scale-[1.02] active:scale-95 transition">
+                    GIRAR A ROLETA GRATIS
+                </button>
+                <p id="spinTimerNote" class="text-[11px] text-slate-500 mt-3 font-medium hidden">Próximo giro disponível em breve!</p>
+            </div>
+        </section>
+
+        <!-- TAB CONTENT 3: WITHDRAWAL SIMULATION -->
+        <section id="sec-withdraw" class="hidden space-y-6">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 max-w-xl mx-auto">
+                <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800">
+                    <div class="w-12 h-12 pix-gradient rounded-2xl flex items-center justify-center text-slate-950 text-2xl font-black">
+                        <i class="fa-solid fa-pix"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100">Simulador de Saque Pix</h2>
+                        <p class="text-xs text-slate-400">Converta suas moedas virtuais em saldo Pix simulado</p>
+                    </div>
+                </div>
+
+                <!-- Rate Converter Card -->
+                <div class="bg-slate-950/60 rounded-2xl p-4 border border-slate-800 flex items-center justify-between mb-6">
+                    <div class="text-xs text-slate-400">
+                        <span>Taxa de Conversão:</span>
+                        <div class="text-slate-200 font-bold text-sm mt-0.5">1.000 Moedas = R$ 1,00</div>
+                    </div>
+                    <button onclick="convertCoinsToPix()" class="px-3.5 py-2 bg-teal-500/10 border border-teal-500/30 text-teal-300 rounded-xl text-xs font-bold hover:bg-teal-500/20 transition">
+                        Converter Moedas
+                    </button>
+                </div>
+
+                <!-- Form -->
+                <form id="withdrawForm" onsubmit="handleWithdraw(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tipo de Chave Pix</label>
+                        <select id="pixKeyType" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-teal-500">
+                            <option value="CPF">CPF</option>
+                            <option value="Telefone">Telefone Celular</option>
+                            <option value="E-mail">E-mail</option>
+                            <option value="Chave Aleatória">Chave Aleatória</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Chave Pix Simulada</label>
+                        <input type="text" id="pixKeyInput" required placeholder="Digite sua chave fictícia..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-teal-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Valor do Saque Simulado (R$)</label>
+                        <div class="grid grid-cols-3 gap-2 mb-2">
+                            <button type="button" onclick="setWithdrawAmount(5)" class="py-2 bg-slate-800 border border-slate-700 hover:border-teal-500/50 rounded-xl text-xs font-bold text-slate-200">R$ 5,00</button>
+                            <button type="button" onclick="setWithdrawAmount(10)" class="py-2 bg-slate-800 border border-slate-700 hover:border-teal-500/50 rounded-xl text-xs font-bold text-slate-200">R$ 10,00</button>
+                            <button type="button" onclick="setWithdrawAmount(25)" class="py-2 bg-slate-800 border border-slate-700 hover:border-teal-500/50 rounded-xl text-xs font-bold text-slate-200">R$ 25,00</button>
+                        </div>
+                        <input type="number" id="withdrawAmount" min="1" step="0.5" required placeholder="Outro valor..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-teal-500">
+                    </div>
+
+                    <!-- Warning box -->
+                    <div class="p-3 bg-slate-950/80 rounded-xl border border-amber-500/20 text-[11px] text-amber-300/80 flex items-start gap-2">
+                        <i class="fa-solid fa-circle-info text-amber-400 mt-0.5"></i>
+                        <span>Este procedimento gera apenas um comprovante ilustrativo. Nenhuma quantia em dinheiro de verdade será transferida.</span>
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 pix-gradient text-slate-950 font-extrabold text-sm rounded-xl shadow-lg shadow-teal-500/20 hover:opacity-95 transition">
+                        SOLICITAR SAQUE SIMULADO
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- TAB CONTENT 4: TRANSACTION HISTORY -->
+        <section id="sec-history" class="hidden space-y-4">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-slate-200">Histórico de Transações Simuladas</h3>
+                    <button onclick="clearHistory()" class="text-xs text-rose-400 hover:underline">Limpar</button>
+                </div>
+                
+                <div id="historyList" class="space-y-2 text-sm">
+                    <!-- Dynamically populated -->
+                    <p class="text-xs text-slate-500 text-center py-6">Nenhuma transação efetuada ainda.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER DISCLAIMER -->
+    <footer class="max-w-4xl mx-auto w-full px-4 py-4 text-center border-t border-slate-800/80 text-[11px] text-slate-500">
+        <p>© 2026 Pix Cash Master - Jogo de Entretenimento Virtual. Não afiliado ao Banco Central do Brasil.</p>
+    </footer>
+
+    <!-- MODAL CONTAINER FOR MINI-GAMES -->
+    <div id="gameModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh]">
+            
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                <h3 id="modalGameTitle" class="text-lg font-extrabold text-slate-100">Mini-jogo</h3>
+                <button onclick="closeGameModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content Area -->
+            <div id="modalGameBody" class="p-6 overflow-y-auto flex-1 flex flex-col items-center justify-center">
+                <!-- Dynamic Content injected here -->
+            </d
